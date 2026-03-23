@@ -7,10 +7,12 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Directivas CALEA">
-    <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📄</text></svg>">
     <link rel="manifest" href="manifest.json">
     <title>Directivas CALEA | Estado de México</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
@@ -48,7 +50,6 @@
             font-size: 16px;
             border: 1px solid #ddd;
             border-radius: 5px;
-            box-sizing: border-box;
         }
         .counter {
             text-align: center;
@@ -56,36 +57,67 @@
             font-size: 0.9em;
             color: #666;
         }
-        ul {
-            list-style: none;
-            padding: 0;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 12px;
-        }
-        li {
-            background: #f9f9f9;
+        .chapter {
+            margin-bottom: 10px;
             border: 1px solid #e0e0e0;
             border-radius: 6px;
-            padding: 12px;
-            transition: 0.2s;
+            overflow: hidden;
         }
-        li:hover {
-            background: #f0f0f0;
-            transform: translateY(-2px);
+        .chapter-header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 12px 15px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+        .chapter-header:hover {
+            background-color: #1a2a3a;
+        }
+        .chapter-header .toggle-icon {
+            font-size: 1.2em;
+        }
+        .chapter-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background: white;
+        }
+        .chapter-content.open {
+            max-height: 2000px;
+            transition: max-height 0.5s ease-in;
+        }
+        .pdf-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .pdf-list li {
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .pdf-list li:last-child {
+            border-bottom: none;
         }
         .file-name {
-            font-weight: 600;
+            font-weight: 500;
             word-break: break-word;
-            margin-bottom: 8px;
-            font-size: 0.9em;
+            flex: 1;
+            margin-right: 10px;
         }
         .actions a {
             text-decoration: none;
             padding: 5px 10px;
             border-radius: 4px;
             font-size: 0.85em;
-            margin-right: 8px;
+            margin-left: 8px;
             display: inline-block;
         }
         .view {
@@ -115,8 +147,16 @@
             color: #777;
         }
         @media (max-width: 600px) {
-            ul {
-                grid-template-columns: 1fr;
+            .pdf-list li {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .actions {
+                margin-top: 8px;
+            }
+            .actions a {
+                margin-left: 0;
+                margin-right: 8px;
             }
         }
     </style>
@@ -125,72 +165,186 @@
 <div class="container">
     <h1>📄 Directivas CALEA<br><small>Estado de México</small></h1>
     <div class="search-box">
-        <input type="text" id="searchInput" placeholder="🔍 Buscar por nombre...">
+        <input type="text" id="searchInput" placeholder="🔍 Buscar por capítulo o nombre...">
     </div>
     <div class="counter" id="counter"></div>
-    <ul id="pdfList"></ul>
-    <footer>Los archivos se abren en el navegador o se descargan. Si un PDF no se visualiza, prueba a descargarlo.</footer>
+    <div id="chaptersContainer"></div>
+    <footer>Los archivos se abren en el navegador o se descargan. Haz clic en cada capítulo para desplegar.</footer>
 </div>
 
 <script>
-    // Registrar service worker para PWA
+    // Nombres de los capítulos (mapeo número -> nombre)
+    const chapterNames = {
+        "1": "Capítulo 1: Función y Autoridad de Aplicación de la Ley",
+        "4": "Capítulo 4: Uso de la Fuerza",
+        "11": "Capítulo 11: Organización y Administración",
+        "12": "Capítulo 12: Dirección",
+        "15": "Capítulo 15: Planeación y Estudios",
+        "17": "Capítulo 17: Administración Contable y Bienes del Organismo",
+        "21": "Capítulo 21: Clasificación y Definición de Deberes y Responsabilidades",
+        "22": "Capítulo 22: Sistema de Administración de Personal",
+        "26": "Capítulo 26: Procedimientos de Disciplina y Asuntos Internos",
+        "31": "Capítulo 31: Reclutamiento y Selección",
+        "33": "Capítulo 33: Capacitación y Desarrollo Profesional",
+        "34": "Capítulo 34: Promoción",
+        "35": "Capítulo 35: Evaluación del Desempeño",
+        "40": "Capítulo 40: Análisis e Inteligencia Delictual",
+        "41": "Capítulo 41: Patrulla",
+        "42": "Capítulo 42: Investigación Penal",
+        "43": "Capítulo 43: Control de Vicios, Drogas y Crimen Organizado",
+        "46": "Capítulo 46: Incidentes Críticos, Operaciones Especiales y Seguridad Nacional",
+        "54": "Capítulo 54: Información Pública",
+        "61": "Capítulo 61: Tránsito",
+        "70": "Capítulo 70: Traslado del Detenido",
+        "74": "Capítulo 74: Notificación Judicial",
+        "81": "Capítulo 81: Comunicaciones",
+        "82": "Capítulo 82: Registros Centrales",
+        "83": "Capítulo 83: Recolección y Preservación de Pruebas"
+    };
+
+    // Registrar service worker (si existe)
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js')
-            .then(reg => console.log('Service Worker registrado', reg))
-            .catch(err => console.error('Error al registrar Service Worker', err));
+        navigator.serviceWorker.register('sw.js').catch(err => console.log('SW no registrado:', err));
     }
 
+    // Obtener y procesar los PDFs
     fetch('pdfs.json')
         .then(response => {
-            if (!response.ok) {
-                throw new Error('No se pudo cargar la lista de PDFs.');
-            }
+            if (!response.ok) throw new Error('No se pudo cargar pdfs.json');
             return response.json();
         })
         .then(pdfs => {
-            pdfs.sort();
-            renderList(pdfs);
-            setupSearch(pdfs);
+            // Agrupar por capítulo (primer número antes del primer "_")
+            const chapters = {};
+            pdfs.forEach(filename => {
+                const match = filename.match(/^(\d+)_/);
+                if (match) {
+                    const chapter = match[1];
+                    if (!chapters[chapter]) chapters[chapter] = [];
+                    chapters[chapter].push(filename);
+                } else {
+                    // Archivos que no empiezan con número (ej: estandares_calea.pdf)
+                    if (!chapters['Otros']) chapters['Otros'] = [];
+                    chapters['Otros'].push(filename);
+                }
+            });
+
+            // Ordenar capítulos numéricamente, y "Otros" al final
+            const sortedChapters = Object.keys(chapters).sort((a, b) => {
+                if (a === 'Otros') return 1;
+                if (b === 'Otros') return -1;
+                return parseInt(a) - parseInt(b);
+            });
+
+            // Guardar datos globalmente para búsqueda
+            window.allPDFs = pdfs;
+            window.chaptersData = chapters;
+            window.sortedChapters = sortedChapters;
+
+            renderChapters(chapters, sortedChapters);
+            setupSearch(chapters, sortedChapters);
         })
         .catch(error => {
-            console.error('Error:', error);
-            document.getElementById('pdfList').innerHTML = `<li class="no-results">⚠️ Error al cargar la lista de documentos. Verifica que el archivo pdfs.json esté en la raíz del sitio.</li>`;
+            console.error(error);
+            document.getElementById('chaptersContainer').innerHTML = `<div class="no-results">⚠️ Error al cargar la lista de documentos. Verifica que el archivo pdfs.json esté en la raíz.</div>`;
         });
 
-    function renderList(pdfs) {
-        const listElement = document.getElementById('pdfList');
-        const counter = document.getElementById('counter');
-        counter.textContent = `${pdfs.length} documento(s) encontrado(s)`;
+    function renderChapters(chapters, sortedChapters, filterTerm = '') {
+        const container = document.getElementById('chaptersContainer');
+        let totalDocs = 0;
+        let html = '';
 
-        if (pdfs.length === 0) {
-            listElement.innerHTML = '<li class="no-results">No se encontraron documentos con ese criterio.</li>';
+        sortedChapters.forEach(chapter => {
+            let pdfs = chapters[chapter];
+            // Aplicar filtro si existe
+            if (filterTerm) {
+                pdfs = pdfs.filter(filename => filename.toLowerCase().includes(filterTerm));
+            }
+            if (pdfs.length === 0) return; // omitir capítulos vacíos tras filtro
+            totalDocs += pdfs.length;
+
+            // Obtener nombre del capítulo
+            let chapterDisplay;
+            if (chapter === 'Otros') {
+                chapterDisplay = '📁 Otros Documentos';
+            } else if (chapterNames[chapter]) {
+                chapterDisplay = `📁 ${chapterNames[chapter]}`;
+            } else {
+                chapterDisplay = `📁 Capítulo ${chapter}`;
+            }
+
+            const chapterId = `chapter-${chapter}`;
+            html += `
+                <div class="chapter">
+                    <div class="chapter-header" onclick="toggleChapter('${chapterId}')">
+                        <span>${chapterDisplay}</span>
+                        <span class="toggle-icon">▼</span>
+                    </div>
+                    <div id="${chapterId}" class="chapter-content">
+                        <ul class="pdf-list">
+                            ${pdfs.map(filename => {
+                                const safeName = encodeURIComponent(filename);
+                                const viewUrl = `pdfs/${safeName}`;
+                                const downloadUrl = `pdfs/${safeName}`;
+                                return `
+                                    <li>
+                                        <span class="file-name">${escapeHtml(filename)}</span>
+                                        <div class="actions">
+                                            <a href="${viewUrl}" target="_blank" class="view">👁️ Ver</a>
+                                            <a href="${downloadUrl}" download class="download">⬇️ Descargar</a>
+                                        </div>
+                                    </li>
+                                `;
+                            }).join('')}
+                        </ul>
+                    </div>
+                </div>
+            `;
+        });
+
+        if (totalDocs === 0) {
+            container.innerHTML = '<div class="no-results">No se encontraron documentos con ese criterio.</div>';
+            document.getElementById('counter').textContent = `0 documento(s) encontrado(s)`;
             return;
         }
 
-        let html = '';
-        pdfs.forEach(filename => {
-            const safeFilename = encodeURIComponent(filename);
-            const viewUrl = `pdfs/${safeFilename}`;
-            const downloadUrl = `pdfs/${safeFilename}`;
-            html += `
-                <li>
-                    <div class="file-name">${escapeHtml(filename)}</div>
-                    <div class="actions">
-                        <a href="${viewUrl}" target="_blank" class="view">👁️ Ver</a>
-                        <a href="${downloadUrl}" download class="download">⬇️ Descargar</a>
-                    </div>
-                </li>
-            `;
-        });
-        listElement.innerHTML = html;
+        container.innerHTML = html;
+        document.getElementById('counter').textContent = `${totalDocs} documento(s) encontrado(s)`;
     }
 
-    function setupSearch(pdfs) {
+    function toggleChapter(chapterId) {
+        const content = document.getElementById(chapterId);
+        if (content.classList.contains('open')) {
+            content.classList.remove('open');
+            // Cambiar ícono
+            const header = content.previousElementSibling;
+            header.querySelector('.toggle-icon').textContent = '▼';
+        } else {
+            content.classList.add('open');
+            const header = content.previousElementSibling;
+            header.querySelector('.toggle-icon').textContent = '▲';
+        }
+    }
+
+    function setupSearch(chapters, sortedChapters) {
         const searchInput = document.getElementById('searchInput');
         searchInput.addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase();
-            const filtered = pdfs.filter(filename => filename.toLowerCase().includes(term));
-            renderList(filtered);
+            // Crear una copia filtrada de los capítulos
+            const filteredChapters = {};
+            for (let [chapter, files] of Object.entries(chapters)) {
+                const filteredFiles = files.filter(f => f.toLowerCase().includes(term));
+                if (filteredFiles.length > 0) {
+                    filteredChapters[chapter] = filteredFiles;
+                }
+            }
+            // Reordenar capítulos (los mismos criterios)
+            const filteredSorted = Object.keys(filteredChapters).sort((a, b) => {
+                if (a === 'Otros') return 1;
+                if (b === 'Otros') return -1;
+                return parseInt(a) - parseInt(b);
+            });
+            renderChapters(filteredChapters, filteredSorted, term);
         });
     }
 
