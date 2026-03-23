@@ -2,8 +2,14 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Repositorio de PDFs</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#2c3e50">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Directivas CALEA">
+    <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📄</text></svg>">
+    <link rel="manifest" href="manifest.json">
+    <title>Directivas CALEA | Estado de México</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -24,6 +30,12 @@
             text-align: center;
             color: #2c3e50;
             margin-bottom: 10px;
+        }
+        h1 small {
+            font-size: 0.6rem;
+            color: #666;
+            display: block;
+            margin-top: 5px;
         }
         .search-box {
             margin: 20px 0;
@@ -111,7 +123,7 @@
 </head>
 <body>
 <div class="container">
-    <h1>📄 Repositorio de Documentos PDF</h1>
+    <h1>📄 Directivas CALEA<br><small>Estado de México</small></h1>
     <div class="search-box">
         <input type="text" id="searchInput" placeholder="🔍 Buscar por nombre...">
     </div>
@@ -121,6 +133,13 @@
 </div>
 
 <script>
+    // Registrar service worker para PWA
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js')
+            .then(reg => console.log('Service Worker registrado', reg))
+            .catch(err => console.error('Error al registrar Service Worker', err));
+    }
+
     fetch('pdfs.json')
         .then(response => {
             if (!response.ok) {
