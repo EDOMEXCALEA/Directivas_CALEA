@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repositorio de PDFs</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .search-box {
+            margin: 20px 0;
+            text-align: center;
+        }
+        #searchInput {
+            width: 100%;
+            max-width: 400px;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        .counter {
+            text-align: center;
+            margin: 10px 0;
+            font-size: 0.9em;
+            color: #666;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 12px;
+        }
+        li {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 12px;
+            transition: 0.2s;
+        }
+        li:hover {
+            background: #f0f0f0;
+            transform: translateY(-2px);
+        }
+        .file-name {
+            font-weight: 600;
+            word-break: break-word;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+        .actions a {
+            text-decoration: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            margin-right: 8px;
+            display: inline-block;
+        }
+        .view {
+            background-color: #0077cc;
+            color: white;
+        }
+        .view:hover {
+            background-color: #005fa3;
+        }
+        .download {
+            background-color: #28a745;
+            color: white;
+        }
+        .download:hover {
+            background-color: #1e7e34;
+        }
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #777;
+            font-style: italic;
+        }
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 0.8em;
+            color: #777;
+        }
+        @media (max-width: 600px) {
+            ul {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📄 Repositorio de Documentos PDF</h1>
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="🔍 Buscar por nombre...">
+    </div>
+    <div class="counter" id="counter"></div>
+    <ul id="pdfList"></ul>
+    <footer>Los archivos se abren en el navegador o se descargan. Si un PDF no se visualiza, prueba a descargarlo.</footer>
+</div>
+
+<script>
+    fetch('pdfs.json')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('No se pudo cargar la lista de PDFs.');
+            }
+            return response.json();
+        })
+        .then(pdfs => {
+            pdfs.sort();
+            renderList(pdfs);
+            setupSearch(pdfs);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('pdfList').innerHTML = `<li class="no-results">⚠️ Error al cargar la lista de documentos. Verifica que el archivo pdfs.json esté en la raíz del sitio.</li>`;
+        });
+
+    function renderList(pdfs) {
+        const listElement = document.getElementById('pdfList');
+        const counter = document.getElementById('counter');
+        counter.textContent = `${pdfs.length} documento(s) encontrado(s)`;
+
+        if (pdfs.length === 0) {
+            listElement.innerHTML = '<li class="no-results">No se encontraron documentos con ese criterio.</li>';
+            return;
+        }
+
+        let html = '';
+        pdfs.forEach(filename => {
+            const safeFilename = encodeURIComponent(filename);
+            const viewUrl = `pdfs/${safeFilename}`;
+            const downloadUrl = `pdfs/${safeFilename}`;
+            html += `
+                <li>
+                    <div class="file-name">${escapeHtml(filename)}</div>
+                    <div class="actions">
+                        <a href="${viewUrl}" target="_blank" class="view">👁️ Ver</a>
+                        <a href="${downloadUrl}" download class="download">⬇️ Descargar</a>
+                    </div>
+                </li>
+            `;
+        });
+        listElement.innerHTML = html;
+    }
+
+    function setupSearch(pdfs) {
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = pdfs.filter(filename => filename.toLowerCase().includes(term));
+            renderList(filtered);
+        });
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+</script>
+</body>
+</html>
