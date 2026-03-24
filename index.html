@@ -10,9 +10,7 @@
     <link rel="manifest" href="manifest.json">
     <title>Directivas CALEA | Estado de México</title>
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
@@ -74,12 +72,8 @@
             align-items: center;
             transition: background 0.2s;
         }
-        .chapter-header:hover {
-            background-color: #1a2a3a;
-        }
-        .chapter-header .toggle-icon {
-            font-size: 1.2em;
-        }
+        .chapter-header:hover { background-color: #1a2a3a; }
+        .chapter-header .toggle-icon { font-size: 1.2em; }
         .chapter-content {
             max-height: 0;
             overflow: hidden;
@@ -103,9 +97,7 @@
             align-items: center;
             flex-wrap: wrap;
         }
-        .pdf-list li:last-child {
-            border-bottom: none;
-        }
+        .pdf-list li:last-child { border-bottom: none; }
         .file-name {
             font-weight: 500;
             word-break: break-word;
@@ -124,16 +116,12 @@
             background-color: #0077cc;
             color: white;
         }
-        .view:hover {
-            background-color: #005fa3;
-        }
+        .view:hover { background-color: #005fa3; }
         .download {
             background-color: #28a745;
             color: white;
         }
-        .download:hover {
-            background-color: #1e7e34;
-        }
+        .download:hover { background-color: #1e7e34; }
         .no-results {
             text-align: center;
             padding: 40px;
@@ -192,6 +180,7 @@
         "41": "Capítulo 41: Patrulla",
         "42": "Capítulo 42: Investigación Penal",
         "43": "Capítulo 43: Control de Vicios, Drogas y Crimen Organizado",
+        "45": "Capítulo 45: Prevención del Delito y Participación Comunitaria",
         "46": "Capítulo 46: Incidentes Críticos, Operaciones Especiales y Seguridad Nacional",
         "54": "Capítulo 54: Información Pública",
         "61": "Capítulo 61: Tránsito",
@@ -202,41 +191,45 @@
         "83": "Capítulo 83: Recolección y Preservación de Pruebas"
     };
 
-    // Registrar service worker (si existe)
+    // Función para extraer el número de capítulo de un nombre de archivo
+    function getChapterNumber(filename) {
+        // Formato antiguo: número seguido de guion bajo al inicio
+        let match = filename.match(/^(\d+)_/);
+        if (match) return match[1];
+        // Formato nuevo: "capitulo_XX" (insensible a mayúsculas)
+        match = filename.match(/capitulo_(\d+)/i);
+        if (match) return match[1];
+        return null;
+    }
+
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js').catch(err => console.log('SW no registrado:', err));
     }
 
-    // Obtener y procesar los PDFs
     fetch('pdfs.json')
         .then(response => {
             if (!response.ok) throw new Error('No se pudo cargar pdfs.json');
             return response.json();
         })
         .then(pdfs => {
-            // Agrupar por capítulo (primer número antes del primer "_")
             const chapters = {};
             pdfs.forEach(filename => {
-                const match = filename.match(/^(\d+)_/);
-                if (match) {
-                    const chapter = match[1];
+                const chapter = getChapterNumber(filename);
+                if (chapter !== null) {
                     if (!chapters[chapter]) chapters[chapter] = [];
                     chapters[chapter].push(filename);
                 } else {
-                    // Archivos que no empiezan con número (ej: estandares_calea.pdf)
                     if (!chapters['Otros']) chapters['Otros'] = [];
                     chapters['Otros'].push(filename);
                 }
             });
 
-            // Ordenar capítulos numéricamente, y "Otros" al final
             const sortedChapters = Object.keys(chapters).sort((a, b) => {
                 if (a === 'Otros') return 1;
                 if (b === 'Otros') return -1;
                 return parseInt(a) - parseInt(b);
             });
 
-            // Guardar datos globalmente para búsqueda
             window.allPDFs = pdfs;
             window.chaptersData = chapters;
             window.sortedChapters = sortedChapters;
@@ -256,14 +249,10 @@
 
         sortedChapters.forEach(chapter => {
             let pdfs = chapters[chapter];
-            // Aplicar filtro si existe
-            if (filterTerm) {
-                pdfs = pdfs.filter(filename => filename.toLowerCase().includes(filterTerm));
-            }
-            if (pdfs.length === 0) return; // omitir capítulos vacíos tras filtro
+            if (filterTerm) pdfs = pdfs.filter(f => f.toLowerCase().includes(filterTerm));
+            if (pdfs.length === 0) return;
             totalDocs += pdfs.length;
 
-            // Obtener nombre del capítulo
             let chapterDisplay;
             if (chapter === 'Otros') {
                 chapterDisplay = '📁 Otros Documentos';
@@ -284,14 +273,12 @@
                         <ul class="pdf-list">
                             ${pdfs.map(filename => {
                                 const safeName = encodeURIComponent(filename);
-                                const viewUrl = `pdfs/${safeName}`;
-                                const downloadUrl = `pdfs/${safeName}`;
                                 return `
                                     <li>
                                         <span class="file-name">${escapeHtml(filename)}</span>
                                         <div class="actions">
-                                            <a href="${viewUrl}" target="_blank" class="view">👁️ Ver</a>
-                                            <a href="${downloadUrl}" download class="download">⬇️ Descargar</a>
+                                            <a href="pdfs/${safeName}" target="_blank" class="view">👁️ Ver</a>
+                                            <a href="pdfs/${safeName}" download class="download">⬇️ Descargar</a>
                                         </div>
                                     </li>
                                 `;
@@ -304,7 +291,7 @@
 
         if (totalDocs === 0) {
             container.innerHTML = '<div class="no-results">No se encontraron documentos con ese criterio.</div>';
-            document.getElementById('counter').textContent = `0 documento(s) encontrado(s)`;
+            document.getElementById('counter').textContent = '0 documento(s) encontrado(s)';
             return;
         }
 
@@ -316,13 +303,10 @@
         const content = document.getElementById(chapterId);
         if (content.classList.contains('open')) {
             content.classList.remove('open');
-            // Cambiar ícono
-            const header = content.previousElementSibling;
-            header.querySelector('.toggle-icon').textContent = '▼';
+            content.previousElementSibling.querySelector('.toggle-icon').textContent = '▼';
         } else {
             content.classList.add('open');
-            const header = content.previousElementSibling;
-            header.querySelector('.toggle-icon').textContent = '▲';
+            content.previousElementSibling.querySelector('.toggle-icon').textContent = '▲';
         }
     }
 
@@ -330,15 +314,11 @@
         const searchInput = document.getElementById('searchInput');
         searchInput.addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase();
-            // Crear una copia filtrada de los capítulos
             const filteredChapters = {};
             for (let [chapter, files] of Object.entries(chapters)) {
                 const filteredFiles = files.filter(f => f.toLowerCase().includes(term));
-                if (filteredFiles.length > 0) {
-                    filteredChapters[chapter] = filteredFiles;
-                }
+                if (filteredFiles.length) filteredChapters[chapter] = filteredFiles;
             }
-            // Reordenar capítulos (los mismos criterios)
             const filteredSorted = Object.keys(filteredChapters).sort((a, b) => {
                 if (a === 'Otros') return 1;
                 if (b === 'Otros') return -1;
