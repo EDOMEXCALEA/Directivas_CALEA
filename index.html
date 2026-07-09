@@ -134,6 +134,21 @@
             font-size: 0.8em;
             color: #777;
         }
+        /* Estilos para el aviso legal en el footer */
+        .aviso-footer {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 2px solid #e0e4e8;
+            font-size: 0.85rem;
+            color: #6c757d;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.6;
+        }
+        .aviso-footer strong {
+            color: #495057;
+        }
         @media (max-width: 600px) {
             .pdf-list li {
                 flex-direction: column;
@@ -145,6 +160,9 @@
             .actions a {
                 margin-left: 0;
                 margin-right: 8px;
+            }
+            .aviso-footer {
+                font-size: 0.75rem;
             }
         }
     </style>
@@ -161,7 +179,20 @@
     </div>
     <div class="counter" id="counter"></div>
     <div id="chaptersContainer"></div>
-    <footer>Los archivos se abren en el navegador o se descargan. Haz clic en cada capítulo para desplegar.</footer>
+    <footer>
+        <p>📌 Los documentos se visualizan en el navegador o se descargan automáticamente</p>
+        <p style="margin-top: 8px;">Sistema de Gestión Documental - Directrices CALEA</p>
+        <div class="aviso-footer">
+            ⚠️ <strong>Aviso legal:</strong> Las directivas contenidas en este repositorio están sujetas a cambios 
+            derivados de actualizaciones del <strong>Manual de Estándares CALEA</strong> y de la 
+            <strong>legislación aplicable vigente</strong>. Se recomienda consultar periódicamente esta plataforma 
+            para verificar la versión más actualizada de cada documento.
+        </div>
+        <!-- Imagen de pie de página -->
+        <div style="text-align: center; margin-top: 25px;">
+            <img src="piedepagina.png" alt="Pie de página" style="max-width: 100%; height: auto; max-height: 120px; width: auto; border-radius: 4px;">
+        </div>
+    </footer>
 </div>
 
 <script>
